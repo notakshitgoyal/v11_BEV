@@ -1,0 +1,17 @@
+{
+    "model_path": "yolo11s.pt",
+    "device": "mps",
+    "video_path": "save.mp4",
+    "num_frames": 100,
+    "metrics": {
+        "average_inference_time": "0.0539s",
+        "average_preprocessing_time": "0.0009s",
+        "average_postprocessing_time": "0.0001s",
+        "average_fps": "25.58",
+        "average_detections_per_frame": "1.63",
+        "average_memory_usage_mb": "450.70",
+        "max_memory_usage_mb": "497.75",
+        "min_fps": "0.70",
+        "max_fps": "29.17"
+    }
+}

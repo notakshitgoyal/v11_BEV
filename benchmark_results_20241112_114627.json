@@ -1,0 +1,30 @@
+{
+    "model_path": "yolo11s.pt",
+    "device": "mps",
+    "video_path": "save.mp4",
+    "num_frames": 100,
+    "conf_threshold": 0.25,
+    "metrics": {
+        "performance": {
+            "average_inference_time": "0.0552s",
+            "average_preprocessing_time": "0.0009s",
+            "average_postprocessing_time": "0.0007s",
+            "average_fps": "24.97",
+            "min_fps": "0.65",
+            "max_fps": "28.37",
+            "average_memory_usage_mb": "471.38",
+            "max_memory_usage_mb": "514.61"
+        },
+        "detection_statistics": {
+            "total_frames_processed": 100,
+            "total_detections": 163,
+            "average_detections_per_frame": "1.63",
+            "average_confidence_score": "0.6341",
+            "class_distribution": {
+                "2": 66,
+                "0": 87,
+                "7": 10
+            }
+        }
+    }
+}

@@ -315,10 +315,18 @@ def assign_object_id(current_objects, tracked_objects):
 def plot_object_bev(transformed_image_with_centroids, src_points, dst_points, objs_):
     global heat_map, object_history, object_speeds, last_positions, last_timestamps
     
-    # Start with a black background instead of white
+    # Create a raw transformed image
+    raw_transformed = np.zeros_like(transformed_image_with_centroids)
+    
+    # Get the transformation matrix
+    M = cv2.getPerspectiveTransform(src_points, dst_points)
+    
+    # Apply the perspective transform to the original frame
+    raw_transformed = cv2.warpPerspective(frame, M, (width, height))
+    
+    # Start with a black background for object visualization
     transformed_image_with_centroids = np.zeros_like(transformed_image_with_centroids)
     
-    M = cv2.getPerspectiveTransform(src_points, dst_points)
     persObjs = []
     current_time = time.time()
 
@@ -405,15 +413,64 @@ def plot_object_bev(transformed_image_with_centroids, src_points, dst_points, ob
         if len(speed_records[obj_id]['speeds']) > 30:  # Keep last 30 speed readings
             speed_records[obj_id]['speeds'] = speed_records[obj_id]['speeds'][-30:]
 
-    return transformed_image_with_centroids, persObjs
+    # Return both the processed image and the raw transformed image
+    return transformed_image_with_centroids, persObjs, raw_transformed
 
 frame_count = 0
 centroid_prev_frame = []
 tracking_objects = {}
 tracking_id = 0
 
+# Add these global variables at the top with other globals
+selected_points = []
+selecting_points = True
 
-# Process each frame of the video
+# Add this new function for mouse callback
+def mouse_callback(event, x, y, flags, param):
+    global selected_points, selecting_points
+    if event == cv2.EVENT_LBUTTONDOWN and len(selected_points) < 4:
+        selected_points.append([x, y])
+        # Draw circle at selected point
+        cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
+        cv2.imshow("Select Points", frame)
+        
+        if len(selected_points) == 4:
+            selecting_points = False
+            cv2.destroyWindow("Select Points")
+
+# Modify the main loop to include point selection at start
+# Replace the coordinate definition section with:
+success, frame = video.read()
+if not success:
+    print("Failed to read first frame")
+    exit()
+
+frame = cv2.resize(frame, (width, height))
+
+# Point selection phase
+cv2.namedWindow("Select Points")
+cv2.setMouseCallback("Select Points", mouse_callback)
+print("Please select 4 points in this order:")
+print("1. Bottom-left\n2. Top-left\n3. Top-right\n4. Bottom-right")
+
+while selecting_points:
+    cv2.imshow("Select Points", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        exit()
+
+# Convert selected points to numpy array
+src_points = np.float32(selected_points)
+dst_points = np.float32([
+    [200, 720],    # Bottom-left
+    [200, 0],      # Top-left
+    [1080, 0],     # Top-right
+    [1080, 720]    # Bottom-right
+])
+
+# Reset video capture to start
+video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+# Continue with the main processing loop
 while True:
     # Read the next frame
     success, frame = video.read()
@@ -451,7 +508,7 @@ while True:
 
     # Before transformation
     if len(objs) > 0:
-        transformed_image_with_centroids, persObjs_ = plot_object_bev(
+        transformed_image_with_centroids, persObjs_, raw_transformed = plot_object_bev(
             transformed_image_with_centroids, src_points, dst_points, objs)
         
         # Debug print
@@ -541,7 +598,8 @@ while True:
 
 
     # perspectivs plot and objs
-    transformed_image_with_centroids, persObjs_ = plot_object_bev(transformed_image_with_centroids, src_points ,dst_points , objs)
+    transformed_image_with_centroids, persObjs_, raw_transformed = plot_object_bev(
+        transformed_image_with_centroids, src_points, dst_points, objs)
 
     ### plot objs overlays
     for persObj_ in persObjs_:
@@ -557,6 +615,9 @@ while True:
     cv2.imshow("Simulated Objects", simulated_image)
     cv2.imshow('Transformed Frame', transformed_image_with_centroids)
     # cv2.imwrite('test.jpg', simulated_image)
+
+    # Add this new window display
+    cv2.imshow("Raw BEV Transform", raw_transformed)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
